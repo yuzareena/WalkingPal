@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WalkingPal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0e1a;
+            --bg-medium: #141829;
+            --bg-light: #1e2438;
+            --accent-friend: #00f5d4;
+            --accent-parent: #ff6b9d;
+            --text-primary: #ffffff;
+            --text-secondary: #a8b2d1;
+            --glow-friend: rgba(0, 245, 212, 0.4);
+            --glow-parent: rgba(255, 107, 157, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(0, 245, 212, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(255, 107, 157, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--accent-friend) 0%, var(--accent-parent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            letter-spacing: 0.05em;
+        }
+
+        .agent-toggle {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 4rem;
+            background: var(--bg-medium);
+            padding: 0.5rem;
+            border-radius: 100px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .toggle-btn {
+            padding: 1.25rem 3rem;
+            font-size: 1.125rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 100px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'DM Sans', sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toggle-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+            z-index: 0;
+        }
+
+        .toggle-btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .toggle-btn:not(.active) {
+            background: transparent;
+            color: var(--text-secondary);
+        }
+
+        .toggle-btn:not(.active):hover {
+            color: var(--text-primary);
+        }
+
+        .toggle-btn.active.friend-btn {
+            background: var(--accent-friend);
+            color: var(--bg-dark);
+            box-shadow: 0 0 40px var(--glow-friend), 0 0 80px var(--glow-friend);
+        }
+
+        .toggle-btn.active.parent-btn {
+            background: var(--accent-parent);
+            color: var(--bg-dark);
+            box-shadow: 0 0 40px var(--glow-parent), 0 0 80px var(--glow-parent);
+        }
+
+        .voice-interface {
+            width: 100%;
+            max-width: 900px;
+            background: var(--bg-medium);
+            border-radius: 2rem;
+            padding: 3rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .voice-interface::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-friend), var(--accent-parent));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .voice-interface.active::before {
+            opacity: 1;
+        }
+
+        .agent-info {
+            text-align: center;
+            margin-bottom: 3rem;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.6s forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .agent-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            transition: color 0.3s;
+        }
+
+        .agent-description {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .voice-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .visualizer {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.4s ease;
+        }
+
+        .visualizer::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: var(--bg-light);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .visualizer.active {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 0.8;
+            }
+        }
+
+        .visualizer.active.friend-active::before {
+            box-shadow: 0 0 60px var(--glow-friend), inset 0 0 60px var(--glow-friend);
+            border-color: var(--accent-friend);
+        }
+
+        .visualizer.active.parent-active::before {
+            box-shadow: 0 0 60px var(--glow-parent), inset 0 0 60px var(--glow-parent);
+            border-color: var(--accent-parent);
+        }
+
+        .mic-icon {
+            position: relative;
+            z-index: 1;
+            font-size: 4rem;
+            transition: all 0.3s;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .control-btn {
+            padding: 1.25rem 2.5rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            border: 2px solid;
+            border-radius: 100px;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .start-btn {
+            background: transparent;
+            color: var(--text-primary);
+            border-color: var(--text-primary);
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(255, 255, 255, 0.2);
+        }
+
+        .start-btn.active.friend-mode {
+            background: var(--accent-friend);
+            border-color: var(--accent-friend);
+            color: var(--bg-dark);
+            box-shadow: 0 8px 40px var(--glow-friend);
+        }
+
+        .start-btn.active.parent-mode {
+            background: var(--accent-parent);
+            border-color: var(--accent-parent);
+            color: var(--bg-dark);
+            box-shadow: 0 8px 40px var(--glow-parent);
+        }
+
+        .stop-btn {
+            background: transparent;
+            color: #ff4757;
+            border-color: #ff4757;
+            display: none;
+        }
+
+        .stop-btn.visible {
+            display: block;
+        }
+
+        .stop-btn:hover {
+            background: #ff4757;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(255, 71, 87, 0.4);
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 2rem;
+            padding: 1rem 2rem;
+            background: var(--bg-light);
+            border-radius: 100px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            min-height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .text-input-section {
+            margin-top: 2rem;
+            width: 100%;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        .text-message-input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            background: var(--bg-light);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 100px;
+            color: var(--text-primary);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .text-message-input:focus {
+            outline: none;
+            border-color: var(--accent-friend);
+            box-shadow: 0 0 0 3px rgba(0, 245, 212, 0.1);
+        }
+
+        .text-message-input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+
+        .send-text-btn {
+            padding: 1rem 2rem;
+            background: transparent;
+            border: 2px solid var(--text-primary);
+            border-radius: 100px;
+            color: var(--text-primary);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+        }
+
+        .send-text-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(255, 255, 255, 0.2);
+        }
+
+        .send-text-btn:active {
+            transform: translateY(0);
+        }
+
+        .send-text-btn.friend-mode {
+            background: var(--accent-friend);
+            border-color: var(--accent-friend);
+            color: var(--bg-dark);
+        }
+
+        .send-text-btn.parent-mode {
+            background: var(--accent-parent);
+            border-color: var(--accent-parent);
+            color: var(--bg-dark);
+        }
+
+        .text-input-hint {
+            margin-top: 0.75rem;
+            text-align: center;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
+
+        .config-section {
+            margin-top: 4rem;
+            padding: 2rem;
+            background: var(--bg-light);
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .config-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 1rem;
+            background: var(--bg-medium);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            color: var(--text-primary);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent-friend);
+            box-shadow: 0 0 0 3px rgba(0, 245, 212, 0.1);
+        }
+
+        .input-field::placeholder {
+            color: rgba(168, 178, 209, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 2rem 1rem;
+            }
+
+            h1 {
+                font-size: 3rem;
+            }
+
+            .agent-toggle {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .toggle-btn {
+                width: 100%;
+                padding: 1rem 2rem;
+            }
+
+            .voice-interface {
+                padding: 2rem 1.5rem;
+            }
+
+            .control-buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .control-btn {
+                width: 100%;
+            }
+
+            .input-container {
+                flex-direction: column;
+            }
+
+            .send-text-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>WalkingPal</h1>
+            <p class="subtitle">Choose your pal</p>
+        </div>
+
+        <div class="agent-toggle">
+            <button class="toggle-btn friend-btn active" onclick="switchAgent('friend')">
+                <span>👋 Friend</span>
+            </button>
+            <button class="toggle-btn parent-btn" onclick="switchAgent('parent')">
+                <span>🏠 Parent</span>
+            </button>
+        </div>
+
+        <div class="voice-interface">
+            <div class="agent-info" id="agentInfo">
+                <h2 class="agent-name" id="agentName">Friendly Companion</h2>
+                <p class="agent-description" id="agentDescription">Your supportive friend ready to chat and walk with you</p>
+            </div>
+
+            <div class="voice-controls">
+                <div class="visualizer" id="visualizer">
+                    <div class="mic-icon">🎙️</div>
+                </div>
+
+                <div class="control-buttons">
+                    <button class="control-btn start-btn" id="startBtn" onclick="startConversation()">
+                        Start Conversation
+                    </button>
+                    <button class="control-btn stop-btn" id="stopBtn" onclick="stopConversation()">
+                        End Conversation
+                    </button>
+                </div>
+
+                <div class="status" id="status">
+                    Ready to connect
+                </div>
+
+                <div class="text-input-section" id="textInputSection" style="display: none;">
+                    <div class="input-container">
+                        <input 
+                            type="text" 
+                            id="textInput" 
+                            class="text-message-input" 
+                            placeholder="Type a message to send to the agent..."
+                            onkeypress="handleTextInputKeypress(event)"
+                        >
+                        <button class="send-text-btn" onclick="sendTextMessage()">
+                            Send
+                        </button>
+                    </div>
+                    <p class="text-input-hint">Type and press Enter or click Send to communicate via text</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="config-section">
+            <h3 class="config-title">Configuration</h3>
+            <div class="input-group">
+                <label class="input-label" for="friendAgentId">Friend Agent ID</label>
+                <input 
+                    type="text" 
+                    id="friendAgentId" 
+                    class="input-field" 
+                    placeholder="Enter your friend agent ID"
+                >
+            </div>
+            <div class="input-group">
+                <label class="input-label" for="parentAgentId">Parent Agent ID</label>
+                <input 
+                    type="text" 
+                    id="parentAgentId" 
+                    class="input-field" 
+                    placeholder="Enter your parent agent ID"
+                >
+            </div>
+            <div class="input-group">
+                <label class="input-label" for="apiKey">ElevenLabs API Key (optional for public agents)</label>
+                <input 
+                    type="password" 
+                    id="apiKey" 
+                    class="input-field" 
+                    placeholder="xi-api-key (leave empty for public agents)"
+                >
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentAgent = 'friend';
+        let websocket = null;
+        let audioContext = null;
+        let mediaStream = null;
+        let isConnected = false;
+        let audioProcessor = null;
+        let sourceNode = null;
+        let audioQueue = [];
+        let isPlaying = false;
+        let activityInterval = null;
+
+        const agentData = {
+            friend: {
+                name: 'Friendly Companion',
+                description: 'Your supportive friend ready to chat about anything',
+                emoji: '👋'
+            },
+            parent: {
+                name: 'Caring Parent',
+                description: 'Protective and loving, here to support you and keep you safe',
+                emoji: '🏠'
+            }
+        };
+
+        function switchAgent(agent) {
+            if (isConnected) {
+                updateStatus('Please end the current conversation before switching agents');
+                return;
+            }
+
+            currentAgent = agent;
+
+            // Update button states
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`.${agent}-btn`).classList.add('active');
+
+            // Update agent info with animation
+            const agentInfo = document.getElementById('agentInfo');
+            agentInfo.style.opacity = '0';
+            agentInfo.style.transform = 'translateY(20px)';
+
+            setTimeout(() => {
+                document.getElementById('agentName').textContent = agentData[agent].name;
+                document.getElementById('agentDescription').textContent = agentData[agent].description;
+                agentInfo.style.opacity = '1';
+                agentInfo.style.transform = 'translateY(0)';
+            }, 300);
+
+            updateStatus('Ready to connect');
+        }
+
+        async function startConversation() {
+            const friendAgentId = document.getElementById('friendAgentId').value.trim();
+            const parentAgentId = document.getElementById('parentAgentId').value.trim();
+            const apiKey = document.getElementById('apiKey').value.trim();
+
+            const agentId = currentAgent === 'friend' ? friendAgentId : parentAgentId;
+
+            if (!agentId) {
+                updateStatus(`Please enter your ${currentAgent} agent ID in the configuration section`);
+                return;
+            }
+
+            try {
+                updateStatus('Connecting to agent...');
+
+                // Initialize audio context
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+                // Request microphone access
+                mediaStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        sampleRate: 16000
+                    } 
+                });
+
+                // Get signed URL if API key is provided (for private agents)
+                let wsUrl;
+                if (apiKey) {
+                    const signedUrlResponse = await fetch(
+                        `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${agentId}`,
+                        {
+                            headers: {
+                                'xi-api-key': apiKey
+                            }
+                        }
+                    );
+                    
+                    if (!signedUrlResponse.ok) {
+                        throw new Error('Failed to get signed URL. Check your API key.');
+                    }
+                    
+                    const data = await signedUrlResponse.json();
+                    wsUrl = data.signed_url;
+                } else {
+                    // Public agent connection
+                    wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${agentId}`;
+                }
+
+                // Connect to WebSocket
+                websocket = new WebSocket(wsUrl);
+
+                websocket.onopen = () => {
+                    console.log('WebSocket connected');
+                    isConnected = true;
+                    updateStatus('Connected! Initializing conversation...');
+                    
+                    // Send conversation initialization (optional - can customize agent behavior)
+                    // This is where you can override agent settings if needed
+                    websocket.send(JSON.stringify({
+                        type: 'conversation_initiation_client_data',
+                        conversation_config_override: {}
+                    }));
+
+                    // Start periodic activity heartbeat to keep connection alive
+                    activityInterval = setInterval(() => {
+                        if (websocket && websocket.readyState === WebSocket.OPEN) {
+                            websocket.send(JSON.stringify({
+                                type: 'user_activity'
+                            }));
+                            console.log('Sent user_activity heartbeat');
+                        }
+                    }, 5000); // Send every 5 seconds
+                    
+                    // Update UI
+                    document.getElementById('startBtn').classList.add('active', `${currentAgent}-mode`);
+                    document.getElementById('stopBtn').classList.add('visible');
+                    document.getElementById('visualizer').classList.add('active', `${currentAgent}-active`);
+                    document.querySelector('.voice-interface').classList.add('active');
+                    
+                    // Show text input section
+                    document.getElementById('textInputSection').style.display = 'block';
+                    document.querySelector('.send-text-btn').classList.add(`${currentAgent}-mode`);
+
+                    // Wait 2 seconds before starting to send audio - let agent speak first
+                    setTimeout(() => {
+                        if (isConnected) {
+                            startAudioStream();
+                            console.log('Started audio streaming after initial delay');
+                        }
+                    }, 2000);
+                };
+
+                websocket.onmessage = async (event) => {
+                    try {
+                        const message = JSON.parse(event.data);
+                        console.log('Received message:', message.type);
+                        
+                        if (message.type === 'conversation_initiation_metadata') {
+                            console.log('Conversation initiated:', message.conversation_initiation_metadata_event);
+                            updateStatus('Agent is ready to speak...');
+                        } else if (message.type === 'audio') {
+                            // Queue audio for playback
+                            audioQueue.push(message.audio_event.audio_base_64);
+                            if (!isPlaying) {
+                                playNextAudio();
+                            }
+                        } else if (message.type === 'agent_response') {
+                            console.log('Agent response:', message.agent_response_event.agent_response);
+                        } else if (message.type === 'user_transcript') {
+                            updateStatus(`You: ${message.user_transcription_event.user_transcript}`);
+                        } else if (message.type === 'internal_tentative_agent_response') {
+                            console.log('Tentative response:', message.tentative_agent_response_internal_event.tentative_agent_response);
+                        } else if (message.type === 'agent_response_correction') {
+                            console.log('Agent response correction');
+                        } else if (message.type === 'interruption') {
+                            console.log('Interruption detected');
+                            // Clear audio queue on interruption
+                            audioQueue = [];
+                            isPlaying = false;
+                            updateStatus('Listening...');
+                        } else if (message.type === 'ping') {
+                            websocket.send(JSON.stringify({ 
+                                type: 'pong', 
+                                event_id: message.ping_event.event_id 
+                            }));
+                            console.log('Responded to ping');
+                        } else if (message.type === 'vad_score') {
+                            // Voice Activity Detection score - can use to show visual feedback
+                            const vadScore = message.vad_score_event.vad_score;
+                            if (vadScore > 0.7) {
+                                console.log('Voice detected:', vadScore);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error processing message:', error);
+                    }
+                };
+
+                websocket.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    updateStatus('Connection error occurred');
+                };
+
+                websocket.onclose = (event) => {
+                    console.log('WebSocket closed:', event.code, event.reason);
+                    cleanupConnection();
+                    if (event.code !== 1000) {
+                        updateStatus(`Connection closed: ${event.reason || 'Unknown reason'}`);
+                    } else {
+                        updateStatus('Conversation ended');
+                    }
+                };
+
+            } catch (error) {
+                console.error('Error starting conversation:', error);
+                updateStatus(`Error: ${error.message}`);
+                cleanupConnection();
+            }
+        }
+
+        function startAudioStream() {
+            try {
+                const source = audioContext.createMediaStreamSource(mediaStream);
+                const processor = audioContext.createScriptProcessor(2048, 1, 1);
+                
+                sourceNode = source;
+                audioProcessor = processor;
+
+                processor.onaudioprocess = (e) => {
+                    if (!isConnected || !websocket || websocket.readyState !== WebSocket.OPEN) {
+                        return;
+                    }
+
+                    const inputData = e.inputBuffer.getChannelData(0);
+                    
+                    // Convert to PCM16
+                    const pcm16 = new Int16Array(inputData.length);
+                    for (let i = 0; i < inputData.length; i++) {
+                        const s = Math.max(-1, Math.min(1, inputData[i]));
+                        pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                    }
+
+                    // Convert to base64
+                    const uint8Array = new Uint8Array(pcm16.buffer);
+                    const base64Audio = btoa(String.fromCharCode.apply(null, uint8Array));
+
+                    // Send to WebSocket - audio must be sent as JSON with user_audio_chunk key
+                    try {
+                        if (websocket && websocket.readyState === WebSocket.OPEN) {
+                            websocket.send(JSON.stringify({
+                                user_audio_chunk: base64Audio
+                            }));
+                        }
+                    } catch (error) {
+                        console.error('Error sending audio:', error);
+                    }
+                };
+
+                source.connect(processor);
+                processor.connect(audioContext.destination);
+                
+                console.log('Audio stream started');
+            } catch (error) {
+                console.error('Error starting audio stream:', error);
+                updateStatus('Error starting audio stream');
+            }
+        }
+
+        async function playNextAudio() {
+            if (audioQueue.length === 0) {
+                isPlaying = false;
+                updateStatus('Listening...');
+                return;
+            }
+
+            isPlaying = true;
+            updateStatus('Agent is speaking...');
+            const base64Audio = audioQueue.shift();
+
+            try {
+                // Decode base64 to array buffer
+                const binaryString = atob(base64Audio);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+
+                // Convert PCM16 to AudioBuffer
+                const int16Array = new Int16Array(bytes.buffer);
+                const float32Array = new Float32Array(int16Array.length);
+                
+                for (let i = 0; i < int16Array.length; i++) {
+                    float32Array[i] = int16Array[i] / 32768.0;
+                }
+
+                const audioBuffer = audioContext.createBuffer(1, float32Array.length, 16000);
+                audioBuffer.getChannelData(0).set(float32Array);
+
+                // Play audio
+                const source = audioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(audioContext.destination);
+                
+                source.onended = () => {
+                    playNextAudio();
+                };
+                
+                source.start();
+            } catch (error) {
+                console.error('Error playing audio:', error);
+                playNextAudio(); // Continue to next audio chunk
+            }
+        }
+
+        function stopConversation() {
+            cleanupConnection();
+            updateStatus('Ready to connect');
+        }
+
+        function cleanupConnection() {
+            isConnected = false;
+            audioQueue = [];
+            isPlaying = false;
+
+            // Clear activity heartbeat
+            if (activityInterval) {
+                clearInterval(activityInterval);
+                activityInterval = null;
+            }
+
+            if (audioProcessor) {
+                audioProcessor.disconnect();
+                audioProcessor = null;
+            }
+
+            if (sourceNode) {
+                sourceNode.disconnect();
+                sourceNode = null;
+            }
+
+            if (websocket) {
+                if (websocket.readyState === WebSocket.OPEN) {
+                    websocket.close(1000, 'User ended conversation');
+                }
+                websocket = null;
+            }
+
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+
+            if (audioContext && audioContext.state !== 'closed') {
+                audioContext.close().catch(console.error);
+                audioContext = null;
+            }
+
+            // Reset UI
+            document.getElementById('startBtn').classList.remove('active', 'friend-mode', 'parent-mode');
+            document.getElementById('stopBtn').classList.remove('visible');
+            document.getElementById('visualizer').classList.remove('active', 'friend-active', 'parent-active');
+            document.querySelector('.voice-interface').classList.remove('active');
+            
+            // Hide text input section
+            document.getElementById('textInputSection').style.display = 'none';
+            document.querySelector('.send-text-btn').classList.remove('friend-mode', 'parent-mode');
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        function sendTextMessage() {
+            const textInput = document.getElementById('textInput');
+            const message = textInput.value.trim();
+
+            if (!message) {
+                return;
+            }
+
+            if (!isConnected || !websocket || websocket.readyState !== WebSocket.OPEN) {
+                updateStatus('Not connected. Please start the conversation first.');
+                return;
+            }
+
+            try {
+                // Send text message to agent
+                websocket.send(JSON.stringify({
+                    type: 'user_message',
+                    text: message
+                }));
+
+                console.log('Sent text message:', message);
+                updateStatus(`You (text): ${message}`);
+                
+                // Clear input
+                textInput.value = '';
+            } catch (error) {
+                console.error('Error sending text message:', error);
+                updateStatus('Error sending message');
+            }
+        }
+
+        function handleTextInputKeypress(event) {
+            if (event.key === 'Enter') {
+                sendTextMessage();
+            }
+        }
+
+        // Load saved configuration
+        window.addEventListener('load', () => {
+            const savedFriendId = localStorage.getItem('friendAgentId');
+            const savedParentId = localStorage.getItem('parentAgentId');
+            const savedApiKey = localStorage.getItem('apiKey');
+
+            if (savedFriendId) document.getElementById('friendAgentId').value = savedFriendId;
+            if (savedParentId) document.getElementById('parentAgentId').value = savedParentId;
+            if (savedApiKey) document.getElementById('apiKey').value = savedApiKey;
+        });
+
+        // Save configuration on change
+        ['friendAgentId', 'parentAgentId', 'apiKey'].forEach(id => {
+            document.getElementById(id).addEventListener('change', (e) => {
+                localStorage.setItem(id, e.target.value);
+            });
+        });
+    </script>
+</body>
+</html>
